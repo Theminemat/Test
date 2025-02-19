@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .loader-container {
+            text-align: center;
+        }
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader-container">
+        <h2>Weiterleitung...</h2>
+        <div class="loader"></div>
+    </div>
+
+    <script>
+        function getSlugFromPath() {
+            var path = window.location.pathname; // Holt den Pfad aus der URL
+            var slug = path.split("/").filter(Boolean).pop(); // Letztes Element des Pfads als Slug
+            return slug;
+        }
+
+        function fetchTarget() {
+            var slug = getSlugFromPath();
+            if (!slug) {
+                document.body.innerHTML = "<h2>Fehler: Kein Slug gefunden!</h2>";
+                return;
+            }
+
+            var apiUrl = "https://script.google.com/macros/s/AKfycbx30z6SoA8eP3LeIK7gblcFBBkhuwsX9v-3xccBl2wvAjrNq-oGp_AYof9YVnioOkDcJA/exec?slug=" + encodeURIComponent(slug);
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.target) {
+                        window.location.href = data.target;
+                    } else {
+                        document.body.innerHTML = "<h2>Fehler: Slug nicht gefunden.</h2>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Fehler bei der API-Anfrage:", error);
+                    document.body.innerHTML = "<h2>Es gab ein Problem mit der API.</h2>";
+                });
+        }
+
+        fetchTarget();
+    </script>
+
+</body>
+</html>
