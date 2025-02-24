@@ -135,7 +135,7 @@
   </div>
 
   <script>
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwbepsWSjM2UzAIKzxS1XnbXP-gFMuNEOBaUg0AkWVCDOtmEaIm-TA0IwonVvBSYJBTpQ/exec';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxvdhS3K7OwzyPnoDPgSe97twNh5vmbyYwJK_3BhC3ExFXZbR4gy77WJnDK-XtcCLMkgg/exec';
     const linksTable = document.getElementById('linksTable').querySelector('tbody');
     const editPopup = document.getElementById('editPopup');
     const overlay = document.getElementById('overlay');
@@ -170,9 +170,14 @@
       const response = await fetch(scriptUrl + '?action=create&slug=' + slug + '&target=' + target, { method: 'POST' });
       const result = await response.json();
       hideSpinner();
-      document.getElementById('createMessage').textContent = result.success ? 'Link erstellt!' : 'Fehler: ' + result.error;
-      document.getElementById('createMessage').className = result.success ? 'success' : 'error';
-      if (result.success) loadLinks();
+      if (result.error) {
+        document.getElementById('createMessage').textContent = 'Fehler: ' + result.error;
+        document.getElementById('createMessage').className = 'error';
+      } else {
+        document.getElementById('createMessage').textContent = 'Link erstellt!';
+        document.getElementById('createMessage').className = 'success';
+        loadLinks();
+      }
     }
 
     async function deleteLink(slug) {
@@ -197,9 +202,12 @@
       const response = await fetch(scriptUrl + '?action=edit&slug=' + slug + '&target=' + target, { method: 'POST' });
       const result = await response.json();
       hideSpinner();
-      document.getElementById('editMessage').textContent = result.success ? 'Link bearbeitet!' : 'Fehler: ' + result.error;
-      document.getElementById('editMessage').className = result.success ? 'success' : 'error';
-      if (result.success) {
+      if (result.error) {
+        document.getElementById('editMessage').textContent = 'Fehler: ' + result.error;
+        document.getElementById('editMessage').className = 'error';
+      } else {
+        document.getElementById('editMessage').textContent = 'Link bearbeitet!';
+        document.getElementById('editMessage').className = 'success';
         editPopup.classList.remove('show');
         overlay.classList.remove('show');
         loadLinks();
