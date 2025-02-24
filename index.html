@@ -40,26 +40,60 @@
     </div>
 
     <script>
+        // Funktion, um den Slug aus der URL zu extrahieren
         function getSlugFromPath() {
             var path = window.location.pathname; // Holt den Pfad aus der URL
             var slug = path.split("/").filter(Boolean).pop(); // Letztes Element des Pfads als Slug
             return slug;
         }
 
-        function fetchTarget() {
+        // Funktion, um Client-Informationen zu sammeln
+        async function getClientInfo() {
+            // Land über IP-Adresse ermitteln
+            const ipResponse = await fetch('https://ipinfo.io/json');
+            const ipData = await ipResponse.json();
+            const country = ipData.country; // Ländercode (z. B. "DE")
+
+            // Betriebssystem ermitteln
+            const os = navigator.platform; // z. B. "Win32", "MacIntel"
+
+            // Browser ermitteln
+            const browser = navigator.userAgent; // z. B. "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+
+            return { country, os, browser };
+        }
+
+        // Funktion, um die Ziel-URL zu holen und Client-Daten zu senden
+        async function fetchTarget() {
             var slug = getSlugFromPath();
             if (!slug) {
                 document.body.innerHTML = "<h2>Fehler: Kein Slug gefunden!</h2>";
                 return;
             }
 
-            var apiUrl = "https://script.google.com/macros/s/AKfycbxvdhS3K7OwzyPnoDPgSe97twNh5vmbyYwJK_3BhC3ExFXZbR4gy77WJnDK-XtcCLMkgg/exec?slug=" + encodeURIComponent(slug);
+            // Client-Daten sammeln
+            const clientInfo = await getClientInfo();
 
-            fetch(apiUrl)
+            // API-URL für das Backend
+            var apiUrl = "https://script.google.com/macros/s/AKfycbxvdhS3K7OwzyPnoDPgSe97twNh5vmbyYwJK_3BhC3ExFXZbR4gy77WJnDK-XtcCLMkgg/exec";
+
+            // Daten an das Backend senden
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    slug: slug,
+                    country: clientInfo.country,
+                    os: clientInfo.os,
+                    browser: clientInfo.browser,
+                }),
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.target) {
-                        window.location.href = data.target;
+                        window.location.href = data.target; // Weiterleitung zur Ziel-URL
                     } else {
                         document.body.innerHTML = "<h2>Fehler: Slug nicht gefunden.</h2>";
                     }
