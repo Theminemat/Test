@@ -150,14 +150,14 @@
         linksTable.innerHTML = '';
         data.links.forEach(link => {
           const row = document.createElement('tr');
-          row.innerHTML = 
+          row.innerHTML = `
             <td>${link.slug}</td>
             <td>${link.target}</td>
             <td>
               <button onclick="openEditPopup('${link.slug}', '${link.target}')">Bearbeiten</button>
               <button onclick="deleteLink('${link.slug}')">Löschen</button>
             </td>
-          ;
+          `;
           linksTable.appendChild(row);
         });
       }
