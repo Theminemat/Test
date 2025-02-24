@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    input, button {
+      margin: 5px;
+      padding: 10px;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+    }
+    .popup.show {
+      display: block;
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 5;
+    }
+    .overlay.show {
+      display: block;
+    }
+    .spinner-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 15;
+      justify-content: center;
+      align-items: center;
+    }
+    .spinner-overlay.show {
+      display: flex;
+    }
+    .spinner {
+      border: 8px solid rgba(0, 0, 0, 0.1);
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+    .refresh-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Link Manager</h1>
+  <div class="refresh-button" onclick="loadLinks()">🔄</div>
+  <table id="linksTable">
+    <thead>
+      <tr>
+        <th>Slug</th>
+        <th>Ziel-URL</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Links will be dynamically inserted here -->
+    </tbody>
+  </table>
+  <div>
+    <h2>Link erstellen</h2>
+    <input type="text" id="createSlug" placeholder="Slug">
+    <input type="text" id="createTarget" placeholder="Ziel-URL">
+    <button onclick="createLink()">Erstellen</button>
+    <p id="createMessage" class="message"></p>
+  </div>
+
+  <div class="popup" id="editPopup">
+    <h2>Link bearbeiten</h2>
+    <input type="text" id="editSlug" placeholder="Slug" readonly>
+    <input type="text" id="editTarget" placeholder="Neue Ziel-URL">
+    <button onclick="saveEdit()">Speichern</button>
+    <button onclick="cancelEdit()">Abbrechen</button>
+    <p id="editMessage" class="message"></p>
+  </div>
+  <div class="overlay" id="overlay"></div>
+  <div class="spinner-overlay" id="spinnerOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwbepsWSjM2UzAIKzxS1XnbXP-gFMuNEOBaUg0AkWVCDOtmEaIm-TA0IwonVvBSYJBTpQ/exec';
+    const linksTable = document.getElementById('linksTable').querySelector('tbody');
+    const editPopup = document.getElementById('editPopup');
+    const overlay = document.getElementById('overlay');
+    const spinnerOverlay = document.getElementById('spinnerOverlay');
+
+    async function loadLinks() {
+      showSpinner();
+      const response = await fetch(scriptUrl);
+      const data = await response.json();
+      hideSpinner();
+      if (data.links) {
+        linksTable.innerHTML = '';
+        data.links.forEach(link => {
+          const row = document.createElement('tr');
+          row.innerHTML = 
+            <td>${link.slug}</td>
+            <td>${link.target}</td>
+            <td>
+              <button onclick="openEditPopup('${link.slug}', '${link.target}')">Bearbeiten</button>
+              <button onclick="deleteLink('${link.slug}')">Löschen</button>
+            </td>
+          ;
+          linksTable.appendChild(row);
+        });
+      }
+    }
+
+    async function createLink() {
+      showSpinner();
+      const slug = document.getElementById('createSlug').value;
+      const target = document.getElementById('createTarget').value;
+      const response = await fetch(scriptUrl + '?action=create&slug=' + slug + '&target=' + target, { method: 'POST' });
+      const result = await response.json();
+      hideSpinner();
+      document.getElementById('createMessage').textContent = result.success ? 'Link erstellt!' : 'Fehler: ' + result.error;
+      document.getElementById('createMessage').className = result.success ? 'success' : 'error';
+      if (result.success) loadLinks();
+    }
+
+    async function deleteLink(slug) {
+      showSpinner();
+      const response = await fetch(scriptUrl + '?action=delete&slug=' + slug, { method: 'POST' });
+      const result = await response.json();
+      hideSpinner();
+      if (result.success) loadLinks();
+    }
+
+    function openEditPopup(slug, target) {
+      document.getElementById('editSlug').value = slug;
+      document.getElementById('editTarget').value = target;
+      editPopup.classList.add('show');
+      overlay.classList.add('show');
+    }
+
+    async function saveEdit() {
+      showSpinner();
+      const slug = document.getElementById('editSlug').value;
+      const target = document.getElementById('editTarget').value;
+      const response = await fetch(scriptUrl + '?action=edit&slug=' + slug + '&target=' + target, { method: 'POST' });
+      const result = await response.json();
+      hideSpinner();
+      document.getElementById('editMessage').textContent = result.success ? 'Link bearbeitet!' : 'Fehler: ' + result.error;
+      document.getElementById('editMessage').className = result.success ? 'success' : 'error';
+      if (result.success) {
+        editPopup.classList.remove('show');
+        overlay.classList.remove('show');
+        loadLinks();
+      }
+    }
+
+    function cancelEdit() {
+      editPopup.classList.remove('show');
+      overlay.classList.remove('show');
+    }
+
+    function showSpinner() {
+      spinnerOverlay.classList.add('show');
+    }
+
+    function hideSpinner() {
+      spinnerOverlay.classList.remove('show');
+    }
+
+    // Load links when the page loads
+    loadLinks();
+  </script>
+</body>
+</html>
